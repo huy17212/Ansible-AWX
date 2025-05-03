@@ -2,6 +2,8 @@
 - name: Install etcd on dedicated disk (/dev/sdb)
   hosts: testing  # Nhóm máy chủ chạy etcd
   become: yes
+  user: root
+  
   tasks:
     # Bước 1: Định dạng và mount ổ /dev/sdb
     - name: Format /dev/sdb (nếu chưa có filesystem)
