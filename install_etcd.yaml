@@ -1,0 +1,58 @@
+---
+- name: Install etcd on dedicated disk (/dev/sdb)
+  hosts: testing  # Nhóm máy chủ chạy etcd
+  become: yes
+  tasks:
+    # Bước 1: Định dạng và mount ổ /dev/sdb
+    - name: Format /dev/sdb (nếu chưa có filesystem)
+      filesystem:
+        fstype: ext4
+        dev: /dev/sdb
+      when: not ansible_mounts | selectattr('device', 'match', '/dev/sdb') | list
+
+    - name: Create mount point
+      file:
+        path: /var/lib/etcd
+        state: directory
+        owner: etcd
+        group: etcd
+        mode: '0755'
+
+    - name: Mount /dev/sdb to /var/lib/etcd
+      mount:
+        path: /var/lib/etcd
+        src: /dev/sdb
+        fstype: ext4
+        state: mounted
+        opts: defaults,noatime
+
+    # Bước 2: Cài đặt etcd
+    - name: Install etcd
+      apt:
+        name: etcd
+        state: present
+        update_cache: yes
+
+    # Bước 3: Cấu hình etcd sử dụng ổ riêng
+    - name: Configure etcd data directory
+      lineinfile:
+        path: /etc/default/etcd
+        regexp: '^ETCD_DATA_DIR='
+        line: 'ETCD_DATA_DIR="/var/lib/etcd"'
+        state: present
+      notify:
+        - Restart etcd
+
+    # Bước 4: Đảm bảo quyền sở hữu
+    - name: Set etcd data dir ownership
+      file:
+        path: /var/lib/etcd
+        owner: etcd
+        group: etcd
+        recurse: yes
+
+  handlers:
+    - name: Restart etcd
+      service:
+        name: etcd
+        state: restarted
