@@ -1,5 +1,5 @@
 - name: Set the system timezone
-  hosts: all
+  hosts: postgres_node_group
   become: yes
   user: root
 
@@ -95,4 +95,50 @@
     #     group: root
     #     mode: '0644'
     #   when: hosts_cleaned is changed
+
+
+    - name: Install postgresql-common (priority 1)
+      apt:
+        name: postgresql-common
+        state: present
+        update_cache: yes
+
+    - name: Execute apt.postgresql.org.sh script (priority 2)
+      command: /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+      args:
+        creates: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc 
+
+    - name: Install curl and ca-certificates
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+
+    - name: Create pgdg directory
+      file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+        mode: '0755'
+
+    - name: Download PostgreSQL GPG key
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+        mode: '0644'
+
+    - name: Create repository configuration
+      copy:
+        dest: /etc/apt/sources.list.d/pgdg.list
+        content: |
+          deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
+
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install PostgreSQL 15
+      apt:
+        name: postgresql-15
+        state: present
     
