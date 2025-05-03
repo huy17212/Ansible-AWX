@@ -16,16 +16,16 @@
         name: nginx
         state: latest
 
-    # - name: Ensure client_max_body_size is set inside the HTTP block
-    #   ansible.builtin.blockinfile:
-    #     path: /etc/nginx/nginx.conf
-    #     marker: "# {mark} ANSIBLE MANAGED BLOCK"
-    #     block: |
-    #       client_max_body_size {{ NGINX_MAX_BODY_SIZE }};
-    #     insertafter: '^http\s*{'
-    #     backup: yes
+    - name: Ensure client_max_body_size is set inside the HTTP block
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          client_max_body_size {{ NGINX_MAX_BODY_SIZE }};
+        insertafter: '^http\s*{'
+        backup: yes
 
-    # - name: Reload Nginx to apply changes
-    #   ansible.builtin.systemd:
-    #     name: nginx
-    #     state: reloaded
+    - name: Reload Nginx to apply changes
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
