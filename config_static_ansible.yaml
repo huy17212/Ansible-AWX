@@ -1,68 +1,40 @@
----
 - hosts: all
   become: true
-  vars:
-    created_username: sysop
-
   tasks:
-    # - name: Install aptitude
-    #   apt:
-    #     name: aptitude
-    #     state: latest
-    #     update_cache: true
 
-    # - name: Setup passwordless sudo
-    #   lineinfile:
-    #     path: /etc/sudoers
-    #     state: present
-    #     regexp: '^%sudo'
-    #     line: '%sudo ALL=(ALL) NOPASSWD: ALL'
-    #     validate: '/usr/sbin/visudo -cf %s'
+    - name: Check if nginx is installed (Debian)
+      ansible.builtin.shell: dpkg -s nginx
+      register: nginx_installed_debian
+      failed_when: false
+      changed_when: false
+      when: ansible_facts['os_family'] == "Debian"
 
-    # - name: Create a new regular user with sudo privileges
-    #   user:
-    #     name: "{{ created_username }}"
-    #     state: present
-    #     groups: sudo
-    #     append: true
-    #     create_home: true
+    # - name: Check if nginx is installed (RedHat)
+    #   ansible.builtin.shell: rpm -q nginx
+    #   register: nginx_installed_redhat
+    #   failed_when: false
+    #   changed_when: false
+    #   when: ansible_facts['os_family'] == "RedHat"
 
-    # - name: Set authorized key for remote user
-    #   ansible.posix.authorized_key:
-    #     user: "{{ created_username }}"
-    #     state: present
-    #     key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
-
-    # - name: Disable password authentication for root
-    #   lineinfile:
-    #     path: /etc/ssh/sshd_config
-    #     state: present
-    #     regexp: '^#?PermitRootLogin'
-    #     line: 'PermitRootLogin prohibit-password'
-
-    - name: Check if nginx is installed
-      ansible.builtin.shell: rpm -q nginx
-      register: nginx_installed
-      ignore_errors: true
-
-    - name: Install nginx if not present
-      ansible.builtin.package:
+    - name: Install nginx on Debian-based systems
+      ansible.builtin.apt:
         name: nginx
         state: present
-      when: nginx_installed.rc != 0
+        update_cache: yes
+      when:
+        - ansible_facts['os_family'] == "Debian"
+        - nginx_installed_debian.rc != 0
+
+    # - name: Install nginx on RedHat-based systems
+    #   ansible.builtin.yum:
+    #     name: nginx
+    #     state: present
+    #   when:
+    #     - ansible_facts['os_family'] == "RedHat"
+    #     - nginx_installed_redhat.rc != 0
 
     - name: Ensure nginx is enabled and started
       ansible.builtin.service:
         name: nginx
         state: started
         enabled: true
-
-    # - name: UFW - Allow SSH connections
-    #   community.general.ufw:
-    #     rule: allow
-    #     name: OpenSSH
-
-    # - name: UFW - Enable and deny by default
-    #   community.general.ufw:
-    #     state: enabled
-    #     default: deny
