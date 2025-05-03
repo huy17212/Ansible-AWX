@@ -109,38 +109,38 @@
       args:
         creates: /etc/apt/sources.list.d/pgdg.list  # Chỉ chạy nếu file repo chưa tồn tại
         stdin: "\n"
-        
-    # - name: Install curl and ca-certificates
-    #   apt:
-    #     name:
-    #       - curl
-    #       - ca-certificates
-    #     state: present
 
-    # - name: Create pgdg directory
-    #   file:
-    #     path: /usr/share/postgresql-common/pgdg
-    #     state: directory
-    #     mode: '0755'
+    - name: Install curl and ca-certificates
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
 
-    # - name: Download PostgreSQL GPG key
-    #   get_url:
-    #     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    #     dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-    #     mode: '0644'
+    - name: Create pgdg directory
+      file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+        mode: '0755'
 
-    # - name: Create repository configuration
-    #   copy:
-    #     dest: /etc/apt/sources.list.d/pgdg.list
-    #     content: |
-    #       deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
+    - name: Download PostgreSQL GPG key
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+        mode: '0644'
+
+    - name: Create repository configuration
+      copy:
+        dest: /etc/apt/sources.list.d/pgdg.list
+        content: |
+          deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
 
     - name: Update apt package cache
       apt:
         update_cache: yes
 
-    # - name: Install PostgreSQL 15
-    #   apt:
-    #     name: postgresql-15
-    #     state: present
+    - name: Install PostgreSQL 15
+      apt:
+        name: postgresql-15
+        state: present
     
