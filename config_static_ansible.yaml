@@ -1,8 +1,8 @@
 ---
 - hosts: all
   become: true
-  # vars:
-  #   created_username: sysop
+  vars:
+    created_username: sysop
 
   tasks:
     # - name: Install aptitude
@@ -43,10 +43,7 @@
     - name: Update apt and install required system packages
       apt:
         pkg:
-          - curl
-          - vim
-          - git
-          - ufw
+          - nginx
         state: latest
         update_cache: true
 
