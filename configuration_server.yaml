@@ -96,49 +96,50 @@
     #     mode: '0644'
     #   when: hosts_cleaned is changed
 
-
-    - name: Install postgresql-common (priority 1)
-      apt:
+        # Task 1: Cài đặt postgresql-common bằng apt
+    - name: Install postgresql-common package
+      ansible.builtin.apt:
         name: postgresql-common
         state: present
         update_cache: yes
 
-    - name: Execute apt.postgresql.org.sh script (priority 2)
-      command: /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+    # Task 2: Thực thi script apt.postgresql.org.sh
+    - name: Execute apt.postgresql.org.sh script
+      ansible.builtin.command: /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
       args:
-        creates: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc 
+        creates: /etc/apt/sources.list.d/pgdg.list  # Chỉ chạy nếu file repo chưa tồn tại
 
-    - name: Install curl and ca-certificates
-      apt:
-        name:
-          - curl
-          - ca-certificates
-        state: present
-
-    - name: Create pgdg directory
-      file:
-        path: /usr/share/postgresql-common/pgdg
-        state: directory
-        mode: '0755'
-
-    - name: Download PostgreSQL GPG key
-      get_url:
-        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-        mode: '0644'
-
-    - name: Create repository configuration
-      copy:
-        dest: /etc/apt/sources.list.d/pgdg.list
-        content: |
-          deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
-
-    # - name: Update apt package cache
+    # - name: Install curl and ca-certificates
     #   apt:
-    #     update_cache: yes
+    #     name:
+    #       - curl
+    #       - ca-certificates
+    #     state: present
 
-    - name: Install PostgreSQL 15
+    # - name: Create pgdg directory
+    #   file:
+    #     path: /usr/share/postgresql-common/pgdg
+    #     state: directory
+    #     mode: '0755'
+
+    # - name: Download PostgreSQL GPG key
+    #   get_url:
+    #     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    #     dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    #     mode: '0644'
+
+    # - name: Create repository configuration
+    #   copy:
+    #     dest: /etc/apt/sources.list.d/pgdg.list
+    #     content: |
+    #       deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
+
+    - name: Update apt package cache
       apt:
-        name: postgresql-15
-        state: present
+        update_cache: yes
+
+    # - name: Install PostgreSQL 15
+    #   apt:
+    #     name: postgresql-15
+    #     state: present
     
