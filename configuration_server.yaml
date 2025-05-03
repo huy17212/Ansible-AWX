@@ -6,6 +6,14 @@
   vars_files:
     - env.yml
 
+  vars:
+    host_entries:
+      - { ip: "192.168.208.106", hostname: "postgres_node01_primary" }
+      - { ip: "192.168.208.107", hostname: "postgres_node03_standby" }
+      - { ip: "192.168.208.108", hostname: "postgres_node04_standby" }
+      - { ip: "192.168.208.109", hostname: "ha_proxy_postgres" }
+      - { ip: "192.168.208.110", hostname: "keep_alived_postgres" }
+
   tasks:
     - name: Set timezone
       ansible.builtin.command:
@@ -46,22 +54,45 @@
     #     owner: root
     #     group: root
     #     mode: '0644'
-    - name: Remove old format entries
+    # - name: Remove old format entries
+    #   ansible.builtin.replace:
+    #     path: /etc/hosts
+    #     regexp: '^\s*-\s*"(.*?)"\s*$'
+    #     replace: '\1'
+        
+    # - name: Add correct format entries
+    #   ansible.builtin.blockinfile:
+    #     path: /etc/hosts
+    #     block: |
+    #       # PostgreSQL Cluster Nodes
+    #       192.168.208.106 postgres_node01_primary
+    #       192.168.208.107 postgres_node03_standby
+    #       192.168.208.108 postgres_node04_standby
+    #       192.168.208.109 ha_proxy_postgres
+    #       192.168.208.110 keep_alived_postgres
+    #     marker: "# {mark} ANSIBLE MANAGED BLOCK - POSTGRESQL CLUSTER"
+    #     insertafter: EOF
+
+    - name: Remove old host entries
       ansible.builtin.replace:
         path: /etc/hosts
-        regexp: '^\s*-\s*"(.*?)"\s*$'
-        replace: '\1'
-        
-    - name: Add correct format entries
+        regexp: '^\s*({{ item.hostname }}|{{ item.ip }})\s+(\S+)\s*$'
+        replace: ''
+      loop: "{{ host_entries }}"
+      register: hosts_cleaned
+
+    - name: Add new entries with correct format
       ansible.builtin.blockinfile:
         path: /etc/hosts
         block: |
           # PostgreSQL Cluster Nodes
-          postgres_node01_primary 192.168.208.106
-          postgres_node03_standby 192.168.208.107
-          postgres_node04_standby 192.168.208.108
-          ha_proxy_postgres 192.168.208.109
-          keep_alived_postgres 192.168.208.110
+          {% for entry in host_entries %}
+          {{ entry.ip }} {{ entry.hostname }}
+          {% endfor %}
         marker: "# {mark} ANSIBLE MANAGED BLOCK - POSTGRESQL CLUSTER"
         insertafter: EOF
+        owner: root
+        group: root
+        mode: '0644'
+      when: hosts_cleaned is changed
     
