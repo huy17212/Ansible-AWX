@@ -19,3 +19,16 @@
         owner: root
         group: root
         mode: '0644'
+
+    - name: Apply Netplan configuration
+      ansible.builtin.command:
+        cmd: sudo netplan apply
+      when: netplan_changed | default(false)
+
+    - name: Enable and start SSH service
+      ansible.builtin.service:
+        name: ssh
+        enabled: yes
+        state: started
+
+    
