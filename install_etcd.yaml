@@ -3,10 +3,10 @@
   hosts: testing  # Nhóm máy chủ chạy etcd
   become: yes
   user: root
-  
+
   tasks:
     # Bước 1: Định dạng và mount ổ /dev/sdb
-    - name: Format /dev/sdb (nếu chưa có filesystem)
+    - name: Format /dev/sdb
       filesystem:
         fstype: ext4
         dev: /dev/sdb
