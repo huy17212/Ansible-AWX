@@ -108,7 +108,8 @@
       ansible.builtin.command: /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
       args:
         creates: /etc/apt/sources.list.d/pgdg.list  # Chỉ chạy nếu file repo chưa tồn tại
-
+        stdin: "\n"
+        
     # - name: Install curl and ca-certificates
     #   apt:
     #     name:
