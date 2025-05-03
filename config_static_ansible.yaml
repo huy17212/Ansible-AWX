@@ -40,17 +40,22 @@
     #     regexp: '^#?PermitRootLogin'
     #     line: 'PermitRootLogin prohibit-password'
 
-    - name: Install nginx
-      apt:
-        name: nginx
-        state: latest
-        update_cache: yes
+    - name: Check if nginx is installed
+      ansible.builtin.shell: rpm -q nginx
+      register: nginx_installed
+      ignore_errors: true
 
-    - name: Ensure nginx is running
-      systemd:
+    - name: Install nginx if not present
+      ansible.builtin.package:
+        name: nginx
+        state: present
+      when: nginx_installed.rc != 0
+
+    - name: Ensure nginx is enabled and started
+      ansible.builtin.service:
         name: nginx
         state: started
-        enabled: yes
+        enabled: true
 
     # - name: UFW - Allow SSH connections
     #   community.general.ufw:
