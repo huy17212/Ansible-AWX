@@ -10,3 +10,12 @@
     - name: Set timezone
       ansible.builtin.command:
         cmd: timedatectl set-timezone {{ TIMEZONE }}
+
+    - name: Create a new file with custom content
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-unenabled-network.cfg
+        content: |
+          network: {config: disabled}
+        owner: root
+        group: root
+        mode: '0644'
