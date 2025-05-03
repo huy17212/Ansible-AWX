@@ -31,4 +31,14 @@
         enabled: yes
         state: started
 
+    - name: Update /etc/hosts on all nodes
+      hosts: all
+      become: yes
+      vars:
+        host_entries:
+          - "postgres_node01_primary 192.168.208.106"
+          - "postgres_node03_standby 192.168.208.107"
+          - "postgres_node04_standby 192.168.208.108"
+          - "ha_proxy_postgres 192.168.208.109"
+          - "keep_alived_postgres 192.168.208.110"
     
