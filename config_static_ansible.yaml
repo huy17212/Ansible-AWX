@@ -4,7 +4,7 @@
   user: root
 
   vars_files:
-    - ../env.yml
+    - env.yml
 
   tasks:
     - name: Update apt cache
