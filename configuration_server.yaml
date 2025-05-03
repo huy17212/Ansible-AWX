@@ -133,9 +133,9 @@
         content: |
           deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
 
-    - name: Update apt package cache
-      apt:
-        update_cache: yes
+    # - name: Update apt package cache
+    #   apt:
+    #     update_cache: yes
 
     - name: Install PostgreSQL 15
       apt:
