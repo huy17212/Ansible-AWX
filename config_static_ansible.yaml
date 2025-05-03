@@ -1,40 +1,6 @@
-- hosts: all
-  become: true
-  tasks:
-
-    - name: Check if nginx is installed (Debian)
-      ansible.builtin.shell: dpkg -s nginx
-      register: nginx_installed_debian
-      failed_when: false
-      changed_when: false
-      when: ansible_facts['os_family'] == "Debian"
-
-    # - name: Check if nginx is installed (RedHat)
-    #   ansible.builtin.shell: rpm -q nginx
-    #   register: nginx_installed_redhat
-    #   failed_when: false
-    #   changed_when: false
-    #   when: ansible_facts['os_family'] == "RedHat"
-
-    - name: Install nginx on Debian-based systems
-      ansible.builtin.apt:
-        name: nginx
-        state: present
-        update_cache: yes
-      when:
-        - ansible_facts['os_family'] == "Debian"
-        - nginx_installed_debian.rc != 0
-
-    # - name: Install nginx on RedHat-based systems
-    #   ansible.builtin.yum:
-    #     name: nginx
-    #     state: present
-    #   when:
-    #     - ansible_facts['os_family'] == "RedHat"
-    #     - nginx_installed_redhat.rc != 0
-
-    - name: Ensure nginx is enabled and started
-      ansible.builtin.service:
-        name: nginx
-        state: started
-        enabled: true
+- name: Update the repository cache and update package "nginx" to latest version using default release squeeze-backport
+  ansible.builtin.apt:
+    name: nginx
+    state: latest
+    default_release: squeeze-backports
+    update_cache: yes
