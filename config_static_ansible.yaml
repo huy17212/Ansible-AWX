@@ -40,12 +40,17 @@
     #     regexp: '^#?PermitRootLogin'
     #     line: 'PermitRootLogin prohibit-password'
 
-    - name: Update apt and install required system packages
+    - name: Ensure nginx is running
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Install nginx
       apt:
-        pkg:
-          - nginx
+        name: nginx
         state: latest
-        update_cache: true
+        update_cache: yes
 
     # - name: UFW - Allow SSH connections
     #   community.general.ufw:
