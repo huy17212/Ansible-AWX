@@ -31,14 +31,19 @@
         enabled: yes
         state: started
 
-    - name: Update /etc/hosts on all nodes
-      hosts: all
-      become: yes
-      vars:
-        host_entries:
+    - name: Add PostgreSQL cluster entries to /etc/hosts
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          # PostgreSQL Cluster Nodes
           - "postgres_node01_primary 192.168.208.106"
           - "postgres_node03_standby 192.168.208.107"
           - "postgres_node04_standby 192.168.208.108"
           - "ha_proxy_postgres 192.168.208.109"
-          - "keep_alived_postgres 192.168.208.110"
+          - "keep_alived_postgres 192.168.208.1"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - POSTGRESQL CLUSTER"
+        insertafter: EOF
+        owner: root
+        group: root
+        mode: '0644'
     
