@@ -1,5 +1,5 @@
 - name: Set the system timezone
-  hosts: postgres_node_group
+  hosts: IUNI-eCommerce-Hosts-Group
   become: yes
   user: root
 
