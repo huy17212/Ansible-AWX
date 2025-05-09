@@ -7,9 +7,17 @@
     maven_version: "3.9.9"
     maven_install_dir: "/opt/maven"
     maven_download_url: "https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
+    jar_url: "https://drive.google.com/file/d/1SxdpKfdredxKe2piD2BszIiHPplzA-Sz/view?usp=sharing"
+    jar_name: "sample-0.0.1-SNAPSHOT.jar" 
+    install_dir: "/opt/myapp"
+    java_opts: "-Xmx512m"
+    mysql_root_password: "root"
+    mysql_db_name: "demo"
+    mysql_user: "root"
+    mysql_user_password: "root"
+    sql_file: "files/script.sql"   
 
   tasks:        
-
     - name: Install curl and ca-certificates
       apt:
         name:
@@ -52,10 +60,107 @@
         executable: /bin/bash
       changed_when: false
 
-    - name: Verify Maven version
-      shell: "source /etc/profile.d/maven.sh && mvn -version"
-      register: maven_version_output
+    - name: Create installation directory
+      ansible.builtin.file:
+        path: "{{ install_dir }}"
+        state: directory
+        mode: '0755'
 
-    - name: Print Maven version
-      debug:
-        msg: "{{ maven_version_output.stdout }}"
+
+    - name: Add MySQL APT repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://repo.mysql.com/apt/ubuntu {{ ansible_distribution_release }} mysql-8.0"
+        filename: "mysql-8.0"
+        keyserver: "hkp://keyserver.ubuntu.com:80"
+        key: "467B942D3A79BD29"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install MySQL Server
+      ansible.builtin.apt:
+        name: "mysql-server=8.0.*"
+        state: present
+
+    - name: Ensure MySQL is running
+      ansible.builtin.service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Secure MySQL installation
+      ansible.builtin.command: mysql_secure_installation
+      args:
+        stdin: |
+          {{ mysql_root_password }}
+          n
+          y
+          y
+          y
+          y
+      when: ansible_first_run 
+
+    - name: Copy custom MySQL config (tuỳ chọn)
+      ansible.builtin.template:
+        src: "templates/my.cnf.j2"
+        dest: "/etc/mysql/my.cnf"
+      notify: Restart MySQL
+
+    - name: Create database
+      community.mysql.mysql_db:
+        name: "{{ mysql_db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    # - name: Create MySQL user with privileges
+    #   community.mysql.mysql_user:
+    #     name: "{{ mysql_user }}"
+    #     password: "{{ mysql_user_password }}"
+    #     priv: "{{ mysql_db_name }}.*:ALL"
+    #     state: present
+    #     login_user: root
+    #     login_password: "{{ mysql_root_password }}"
+
+    # 4. Import dữ liệu từ file SQL
+    - name: Copy SQL file to server
+      ansible.builtin.copy:
+        src: "{{ sql_file }}"
+        dest: "/tmp/database.sql"
+        mode: "0644"
+
+    - name: Import SQL file
+      community.mysql.mysql_db:
+        name: "{{ mysql_db_name }}"
+        state: import
+        target: "/tmp/database.sql"
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+  handlers:
+    - name: Restart MySQL
+      ansible.builtin.service:
+        name: mysql
+        state: restarted
+
+    - name: Download JAR file from Google Drive
+      ansible.builtin.get_url:
+        url: "{{ jar_url }}"
+        dest: "{{ install_dir }}/{{ jar_name }}"
+        mode: '0644'
+      register: downloaded_jar
+
+    - name: Install Java (nếu chưa có)
+      ansible.builtin.apt:
+        name: openjdk-17-jdk
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Run JAR in background with nohup
+      ansible.builtin.command: |
+        nohup java {{ java_opts }} -jar {{ install_dir }}/{{ jar_name }} > {{ install_dir }}/app.log 2>&1 &
+      args:
+        chdir: "{{ install_dir }}"
+        creates: "{{ install_dir }}/app.log"  
+      when: downloaded_jar.changed 
