@@ -144,14 +144,34 @@
         name: postgresql-15
         state: present
 
-    # - name: Install curl and ca-certificates
-    #   apt:
-    #     name:
-    #       - python3-pip
-    #       - python3-dev
-    #       - binutils
-    #       - patroni
-    #       - etcd-client
-    #       - pgbackrest
-    #     state: present
-    
+    - name: Install curl and ca-certificates
+      apt:
+        name:
+          - python3-pip
+          - python3-dev
+          - binutils
+          - patroni
+          - etcd-client
+          - pgbackrest
+        state: present
+
+    - name: Stop services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - etcd
+        - patroni
+        - postgresql
+      ignore_errors: yes  # Bỏ qua nếu dịch vụ không tồn tại
+
+    - name: Disable services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: no
+      loop:
+        - etcd
+        - patroni
+        - postgresql
+      ignore_errors: yes  # Bỏ qua nếu dịch vụ không tồn tại
+        
