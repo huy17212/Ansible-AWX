@@ -1,42 +1,24 @@
 ---
-- name: Install Maven 3.9.9 and JRE 21 on Ubuntu
+- name: Install Apache Maven 3.9.9 on Ubuntu 22.04
   hosts: all
-  become: yes
+  become: true
+
   vars:
     maven_version: "3.9.9"
     maven_install_dir: "/opt/maven"
-    maven_url: "https://dlcdn.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
-  
-  tasks:
-    - name: Update apt package index
-      apt:
-        update_cache: yes
+    maven_download_url: "https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
 
-    # Install required system packages
-    - name: Install required system packages
+  tasks:
+    - name: Install dependencies
       apt:
         name:
-          - wget
+          - curl
           - tar
-          - gzip
+          - openjdk-11-jdk
         state: present
-
-    # Install OpenJDK 21 JRE
-    - name: Add OpenJDK 21 repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://packages.adoptium.net/artifactory/deb {{ ansible_distribution_release }} main"
-        state: present
-        filename: "adoptium"
         update_cache: yes
-      when: ansible_distribution == 'Ubuntu'
 
-    - name: Install OpenJDK 21 JRE
-      apt:
-        name: temurin-21-jre
-        state: present
-
-    # Download and install Maven
-    - name: Create Maven installation directory
+    - name: Create Maven install directory
       file:
         path: "{{ maven_install_dir }}"
         state: directory
@@ -44,52 +26,35 @@
 
     - name: Download Maven
       get_url:
-        url: "{{ maven_url }}"
+        url: "{{ maven_download_url }}"
         dest: "/tmp/apache-maven-{{ maven_version }}-bin.tar.gz"
-        checksum: "sha512:https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz.sha512"
-        timeout: 60
+        mode: '0644'
 
-    - name: Extract Maven
+    - name: Extract Maven archive
       unarchive:
         src: "/tmp/apache-maven-{{ maven_version }}-bin.tar.gz"
         dest: "{{ maven_install_dir }}"
         remote_src: yes
-        extra_opts: ["--strip-components=1"]
-        creates: "{{ maven_install_dir }}/bin/mvn"
+        extra_opts: [--strip-components=1]
 
-    # Set environment variables
-    - name: Add Maven to system profile
-      blockinfile:
-        path: /etc/profile.d/maven.sh
-        block: |
+    - name: Set environment variables for Maven
+      copy:
+        dest: /etc/profile.d/maven.sh
+        content: |
           export M2_HOME={{ maven_install_dir }}
-          export MAVEN_HOME={{ maven_install_dir }}
-          export PATH=${M2_HOME}/bin:${PATH}
-        create: yes
-        mode: '0644'
+          export PATH=$M2_HOME/bin:$PATH
+        mode: '0755'
 
-    - name: Update alternatives for Maven
-      alternatives:
-        name: mvn
-        path: "{{ maven_install_dir }}/bin/mvn"
-        priority: 100
-
-    - name: Verify Java installation
-      command: java -version
-      register: java_version
+    - name: Source maven.sh immediately (optional)
+      shell: source /etc/profile.d/maven.sh
+      args:
+        executable: /bin/bash
       changed_when: false
-      ignore_errors: yes
 
-    - name: Display Java version
+    - name: Verify Maven version
+      shell: "source /etc/profile.d/maven.sh && mvn -version"
+      register: maven_version_output
+
+    - name: Print Maven version
       debug:
-        msg: "{{ java_version.stderr }}"
-
-    - name: Verify Maven installation
-      command: mvn -version
-      register: maven_version
-      changed_when: false
-      ignore_errors: yes
-
-    - name: Display Maven version
-      debug:
-        msg: "{{ maven_version.stdout }}"
+        msg: "{{ maven_version_output.stdout }}"
