@@ -15,7 +15,10 @@
     mysql_db_name: "demo"
     mysql_user: "root"
     mysql_user_password: "root"
-    sql_file: "files/script.sql"   
+    sql_file: "files/script.sql"  
+
+    mysql_version: "8.0.2"
+    sql_import_file: "/tmp/data.sql"
 
   tasks:        
     - name: Install curl and ca-certificates
@@ -67,82 +70,63 @@
         mode: '0755'
 
 
-    - name: Add MySQL APT repository
-      ansible.builtin.apt_repository:
-        repo: "deb http://repo.mysql.com/apt/ubuntu {{ ansible_distribution_release }} mysql-8.0"
-        filename: "mysql-8.0"
-        keyserver: "hkp://keyserver.ubuntu.com:80"
-        key: "467B942D3A79BD29"
-
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: yes
-
-    - name: Install MySQL Server
-      ansible.builtin.apt:
-        name: "mysql-server=8.0.*"
+    - name: Cài các gói phụ thuộc
+      apt:
+        name: "{{ item }}"
         state: present
+      loop:
+        - gnupg
+        - lsb-release
+      when: ansible_os_family == "Debian"
 
-    - name: Ensure MySQL is running
-      ansible.builtin.service:
+
+
+
+
+    - name: Thêm repo MySQL chính thức
+      apt_repository:
+        repo: "deb http://repo.mysql.com/apt/debian/ {{ ansible_distribution_release }} mysql-8.0"
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Tải MySQL 8.0.2 cụ thể
+      apt:
+        name: mysql-server=8.0.2-1debian9
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Đảm bảo dịch vụ MySQL đang chạy
+      service:
         name: mysql
         state: started
         enabled: yes
 
-    - name: Secure MySQL installation
-      ansible.builtin.command: mysql_secure_installation
+    - name: Đặt mật khẩu root cho MySQL
+      mysql_user:
+        name: root
+        host: localhost
+        password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Sao chép file SQL lên server
+      copy:
+        src: files/data.sql
+        dest: "{{ sql_import_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Import file SQL vào MySQL
+      shell: |
+        mysql -u root -p"{{ mysql_root_password }}" < {{ sql_import_file }}
       args:
-        stdin: |
-          {{ mysql_root_password }}
-          n
-          y
-          y
-          y
-          y
-      when: ansible_first_run 
+        executable: /bin/bash
 
-    - name: Copy custom MySQL config (tuỳ chọn)
-      ansible.builtin.template:
-        src: "templates/my.cnf.j2"
-        dest: "/etc/mysql/my.cnf"
-      notify: Restart MySQL
 
-    - name: Create database
-      community.mysql.mysql_db:
-        name: "{{ mysql_db_name }}"
-        state: present
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
 
-    # - name: Create MySQL user with privileges
-    #   community.mysql.mysql_user:
-    #     name: "{{ mysql_user }}"
-    #     password: "{{ mysql_user_password }}"
-    #     priv: "{{ mysql_db_name }}.*:ALL"
-    #     state: present
-    #     login_user: root
-    #     login_password: "{{ mysql_root_password }}"
 
-    # 4. Import dữ liệu từ file SQL
-    - name: Copy SQL file to server
-      ansible.builtin.copy:
-        src: "{{ sql_file }}"
-        dest: "/tmp/database.sql"
-        mode: "0644"
 
-    - name: Import SQL file
-      community.mysql.mysql_db:
-        name: "{{ mysql_db_name }}"
-        state: import
-        target: "/tmp/database.sql"
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
 
-  handlers:
-    - name: Restart MySQL
-      ansible.builtin.service:
-        name: mysql
-        state: restarted
 
     - name: Download JAR file from Google Drive
       ansible.builtin.get_url:
