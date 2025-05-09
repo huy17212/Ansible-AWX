@@ -3,6 +3,9 @@
   hosts: all
   become: true
 
+  collections:
+  - community.mysql
+
   vars:
     maven_version: "3.9.9"
     maven_install_dir: "/opt/maven"
