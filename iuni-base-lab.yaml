@@ -24,15 +24,15 @@
     # Install OpenJDK 21 JRE
     - name: Add OpenJDK 21 repository
       apt_repository:
-        repo: "deb https://pkgs.org/download/openjdk-21-jre {{ ansible_distribution_release }} main"
+        repo: "deb [arch=amd64] https://packages.adoptium.net/artifactory/deb {{ ansible_distribution_release }} main"
         state: present
-        filename: "openjdk-21-jre"
+        filename: "adoptium"
         update_cache: yes
       when: ansible_distribution == 'Ubuntu'
 
     - name: Install OpenJDK 21 JRE
       apt:
-        name: openjdk-21-jre
+        name: temurin-21-jre
         state: present
 
     # Download and install Maven
